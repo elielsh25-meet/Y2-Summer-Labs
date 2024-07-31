@@ -10,7 +10,7 @@ firebaseConfig = {
   "storageBucket": "wishes-d7cff.appspot.com",
   "messagingSenderId": "987112919168",
   "appId": "1:987112919168:web:bd271f2d043f0e390dd665",
-  "databaseURL":""}
+  "databaseURL":"https://wishes-d7cff-default-rtdb.europe-west1.firebasedatabase.app/"}
 
 app = Flask(__name__,template_folder='templates', static_folder = 'static')
 app.config['SECRET_KEY'] = 'eliel'
@@ -22,10 +22,7 @@ auth = firebase.auth()
 # @app.route('/', methods=['GET', 'POST'])
 @app.route('/home', methods = ['GET', 'POST'])
 def home():
-    if request.method == 'POST':
-        return render_template('home.html')
-    else:
-        return render_template('home.html')
+    return render_template('home.html',lastwish=db.child('users').child(login_session['user']['localId']).child('lastwish').get().val())
 
 
 # @app.route('/login', methods = ['GET', 'POST'])
@@ -85,21 +82,19 @@ def signup():
         email = request.form['email']
         password = request.form['password']
         try:
-            auth.create_user_with_email_and_password(email, password)
-            user = {
-                'email': email,
-                'password': password
-            }
-            db.child('Users').push(user)
+            login_session['user']=auth.create_user_with_email_and_password(email, password)
+            db.child('users').update({login_session['user']['localId']:{"lastwish":""}})
             return redirect(url_for('main'))  # Redirect to a different endpoint after signup
-        except:
-            return render_template('home.html')
+        except Exception as e:
+            print(e)
+        return render_template('home.html')
     else:
-      m=  return render_template('main.html')
+        return render_template('main.html')
 
 @app.route('/givewish', methods=['GET','POST'])
 def givewish():
     randomwish=random.choice(['hello,May your love grow stronger with each passing day Filled with joy and laughter along the way.','Wishing you a lifetime of happiness and bliss','A journey together filled withh loves sweet kiss','heres to love laughter and hapily ever after May your life be full xf joy and laughter may','as you start this new chapter hand in hand may love and understanding alwas stand'])
+    db.child('users').child(login_session['user']['localId']).child('lastwish').set(randomwish)
     return render_template('givewish.html', randomwish = randomwish)
 
 @app.route('/wishes', methods = ['GET', 'POST'])
